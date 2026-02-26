@@ -44,6 +44,15 @@
       z-index: 1;
     }
 
+    /* ----- Row of units ----- */
+    .units-row {
+      display: flex;
+      flex-direction: row;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 0;
+    }
+
     /* ----- Shared unit block ----- */
     .unit {
       display: flex;
@@ -51,8 +60,6 @@
       align-items: center;
       gap: 0.25em;
     }
-
-    .unit + .unit { margin-top: 2.5rem; }
 
     .label {
       text-transform: uppercase;
@@ -95,21 +102,34 @@
     }
 
     /* ----- Typography scale ----- */
-    .unit-days .slot         { font-size: clamp(5rem, 20vw, 14rem); }
-    .unit-days .label        { font-size: clamp(0.7rem, 2vw, 1rem); }
+    .unit-days .slot         { font-size: clamp(5rem, 14vw, 14rem); }
+    .unit-days .label        { font-size: clamp(0.7rem, 1.5vw, 1rem); }
 
-    .unit-hours .slot        { font-size: clamp(2.8rem, 10vw, 7rem); }
-    .unit-hours .label       { font-size: clamp(0.65rem, 1.8vw, 0.9rem); }
+    .unit-hours .slot,
+    .unit-minutes .slot,
+    .unit-seconds .slot      { font-size: clamp(2rem, 6vw, 7rem); }
+    .unit-hours .label,
+    .unit-minutes .label,
+    .unit-seconds .label     { font-size: clamp(0.55rem, 1.2vw, 0.85rem); }
 
-    .unit-seconds .slot      { font-size: clamp(1.6rem, 6vw, 4rem); }
-    .unit-seconds .label     { font-size: clamp(0.6rem, 1.5vw, 0.8rem); }
-
-    /* Thin separator line */
+    /* Thin vertical separator between days and the time units */
     .divider {
       width: 1px;
-      height: 2.5rem;
+      height: clamp(4rem, 12vw, 10rem);
       background: var(--border);
-      margin: 0 auto;
+      margin: 0 clamp(1rem, 3vw, 2.5rem);
+      align-self: center;
+    }
+
+    /* Colon separator between time units */
+    .colon {
+      font-size: clamp(2rem, 6vw, 7rem);
+      font-weight: 700;
+      line-height: 1;
+      color: var(--text-muted);
+      padding: 0 0.15em;
+      /* offset matches the label height so the colon stays vertically centred on the digits */
+      padding-bottom: clamp(1.2rem, 3.5vw, 2.2rem);
     }
 
     /* Finished state */
@@ -123,32 +143,44 @@
 </head>
 <body>
 <div class="container" id="app">
-  <!-- Days -->
-  <div class="unit unit-days">
-    <div class="slot-wrapper">
-      <span class="slot" id="days">--</span>
+  <div class="units-row">
+    <!-- Days -->
+    <div class="unit unit-days">
+      <div class="slot-wrapper">
+        <span class="slot" id="days">--</span>
+      </div>
+      <span class="label">jours</span>
     </div>
-    <span class="label">jours</span>
-  </div>
 
-  <div class="divider"></div>
+    <div class="divider"></div>
 
-  <!-- Hours total -->
-  <div class="unit unit-hours">
-    <div class="slot-wrapper">
-      <span class="slot" id="hours">--</span>
+    <!-- Hours -->
+    <div class="unit unit-hours">
+      <div class="slot-wrapper">
+        <span class="slot" id="hours">--</span>
+      </div>
+      <span class="label">heures</span>
     </div>
-    <span class="label">heures restantes</span>
-  </div>
 
-  <div class="divider"></div>
+    <span class="colon">:</span>
 
-  <!-- Seconds total -->
-  <div class="unit unit-seconds">
-    <div class="slot-wrapper">
-      <span class="slot" id="seconds">--</span>
+    <!-- Minutes -->
+    <div class="unit unit-minutes">
+      <div class="slot-wrapper">
+        <span class="slot" id="minutes">--</span>
+      </div>
+      <span class="label">minutes</span>
     </div>
-    <span class="label">secondes restantes</span>
+
+    <span class="colon">:</span>
+
+    <!-- Seconds -->
+    <div class="unit unit-seconds">
+      <div class="slot-wrapper">
+        <span class="slot" id="seconds">--</span>
+      </div>
+      <span class="label">secondes</span>
+    </div>
   </div>
 </div>
 
@@ -159,6 +191,7 @@
 
   const elDays    = document.getElementById('days');
   const elHours   = document.getElementById('hours');
+  const elMinutes = document.getElementById('minutes');
   const elSeconds = document.getElementById('seconds');
 
   // Must match the CSS animation duration (0.35s)
@@ -193,17 +226,15 @@
       return;
     }
 
-    const totalSec   = Math.floor(diff / 1000);
-    const totalHours = Math.floor(diff / 3_600_000);
-    const days       = Math.floor(diff / 86_400_000);
+    const days    = Math.floor(diff / 86_400_000);
+    const hours   = Math.floor((diff % 86_400_000) / 3_600_000);
+    const minutes = Math.floor((diff % 3_600_000)  / 60_000);
+    const seconds = Math.floor((diff % 60_000)      / 1000);
 
-    const daysStr  = String(days);
-    const hoursStr = totalHours.toLocaleString('fr-FR');
-    const secsStr  = totalSec.toLocaleString('fr-FR');
-
-    animateSlot(elDays,    daysStr);
-    animateSlot(elHours,   hoursStr);
-    animateSlot(elSeconds, secsStr);
+    animateSlot(elDays,    String(days));
+    animateSlot(elHours,   String(hours).padStart(2, '0'));
+    animateSlot(elMinutes, String(minutes).padStart(2, '0'));
+    animateSlot(elSeconds, String(seconds).padStart(2, '0'));
   }
 
   // Run immediately then every second
