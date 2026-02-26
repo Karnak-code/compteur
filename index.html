@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Countdown · 3 mars 2026</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0a0f;
+      --surface: rgba(255,255,255,0.04);
+      --border: rgba(255,255,255,0.08);
+      --accent: #7c6fff;
+      --text-primary: #f0eeff;
+      --text-muted: rgba(240,238,255,0.4);
+      --glow: rgba(124,111,255,0.25);
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text-primary);
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    /* Subtle radial glow background */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(ellipse 60% 50% at 50% 40%, var(--glow) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .container {
+      text-align: center;
+      padding: 2rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ----- Shared unit block ----- */
+    .unit {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.25em;
+    }
+
+    .unit + .unit { margin-top: 2.5rem; }
+
+    .label {
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+      color: var(--text-muted);
+      font-weight: 400;
+    }
+
+    /* ----- Number slot ----- */
+    .slot-wrapper {
+      overflow: hidden;
+      position: relative;
+    }
+
+    .slot {
+      display: block;
+      font-variant-numeric: tabular-nums;
+      font-weight: 700;
+      line-height: 1;
+      letter-spacing: -0.02em;
+      color: var(--text-primary);
+      transition: none;
+    }
+
+    /* Slide-up animation when value changes */
+    .slot.animate-out {
+      animation: slideOut 0.35s cubic-bezier(0.4,0,0.2,1) forwards;
+    }
+    .slot.animate-in {
+      animation: slideIn 0.35s cubic-bezier(0.4,0,0.2,1) forwards;
+    }
+
+    @keyframes slideOut {
+      from { transform: translateY(0); opacity: 1; }
+      to   { transform: translateY(-110%); opacity: 0; }
+    }
+    @keyframes slideIn {
+      from { transform: translateY(110%); opacity: 0; }
+      to   { transform: translateY(0); opacity: 1; }
+    }
+
+    /* ----- Typography scale ----- */
+    .unit-days .slot         { font-size: clamp(5rem, 20vw, 14rem); }
+    .unit-days .label        { font-size: clamp(0.7rem, 2vw, 1rem); }
+
+    .unit-hours .slot        { font-size: clamp(2.8rem, 10vw, 7rem); }
+    .unit-hours .label       { font-size: clamp(0.65rem, 1.8vw, 0.9rem); }
+
+    .unit-seconds .slot      { font-size: clamp(1.6rem, 6vw, 4rem); }
+    .unit-seconds .label     { font-size: clamp(0.6rem, 1.5vw, 0.8rem); }
+
+    /* Thin separator line */
+    .divider {
+      width: 1px;
+      height: 2.5rem;
+      background: var(--border);
+      margin: 0 auto;
+    }
+
+    /* Finished state */
+    .finished {
+      font-size: clamp(1.5rem, 5vw, 3rem);
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      color: var(--accent);
+    }
+  </style>
+</head>
+<body>
+<div class="container" id="app">
+  <!-- Days -->
+  <div class="unit unit-days">
+    <div class="slot-wrapper">
+      <span class="slot" id="days">--</span>
+    </div>
+    <span class="label">jours</span>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Hours total -->
+  <div class="unit unit-hours">
+    <div class="slot-wrapper">
+      <span class="slot" id="hours">--</span>
+    </div>
+    <span class="label">heures restantes</span>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- Seconds total -->
+  <div class="unit unit-seconds">
+    <div class="slot-wrapper">
+      <span class="slot" id="seconds">--</span>
+    </div>
+    <span class="label">secondes restantes</span>
+  </div>
+</div>
+
+<script>
+  // Target: 3 March 2026 at 08:00 Paris local time.
+  // France is on CET (UTC+1) until the last Sunday of March, so +01:00 is correct here.
+  const TARGET = new Date('2026-03-03T08:00:00+01:00').getTime();
+
+  const elDays    = document.getElementById('days');
+  const elHours   = document.getElementById('hours');
+  const elSeconds = document.getElementById('seconds');
+
+  // Must match the CSS animation duration (0.35s)
+  const ANIM_DURATION = 350;
+
+  // Animate a slot when its displayed value changes
+  function animateSlot(el, newVal) {
+    if (el.textContent === newVal) return;
+    el.classList.remove('animate-in', 'animate-out');
+    // Force reflow
+    void el.offsetWidth;
+    el.classList.add('animate-out');
+    setTimeout(() => {
+      el.textContent = newVal;
+      el.classList.remove('animate-out');
+      void el.offsetWidth;
+      el.classList.add('animate-in');
+    }, ANIM_DURATION);
+  }
+
+  function update() {
+    const now  = Date.now();
+    const diff = TARGET - now;
+
+    if (diff <= 0) {
+      const app = document.getElementById('app');
+      app.textContent = '';
+      const p = document.createElement('p');
+      p.className = 'finished';
+      p.textContent = "C'est l'heure ! 🎉";
+      app.appendChild(p);
+      return;
+    }
+
+    const totalSec   = Math.floor(diff / 1000);
+    const totalHours = Math.floor(diff / 3_600_000);
+    const days       = Math.floor(diff / 86_400_000);
+
+    const daysStr  = String(days);
+    const hoursStr = totalHours.toLocaleString('fr-FR');
+    const secsStr  = totalSec.toLocaleString('fr-FR');
+
+    animateSlot(elDays,    daysStr);
+    animateSlot(elHours,   hoursStr);
+    animateSlot(elSeconds, secsStr);
+  }
+
+  // Run immediately then every second
+  update();
+  setInterval(update, 1000);
+</script>
+</body>
+</html>
